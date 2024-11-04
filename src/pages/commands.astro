@@ -29,26 +29,49 @@ import Layout from "../layouts/Layout.astro";
     example: string;
   }
 
-  const response = await fetch("https://dev-rei.nerv.run/commands");
-  const data = await response.json();
-  const commands = data.commands as Command[];
+  async function fetchCommands() {
+    try {
+      const response = await fetch("https://dev-rei.nerv.run/commands", {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        mode: 'cors', // explicitly set CORS mode
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.commands as Command[];
+    } catch (error) {
+      console.error("Failed to fetch commands:", error);
+      return [];
+    }
+  }
 
   const commandsElement = document.getElementById("commands");
 
   if (commandsElement) {
-    const commandsList = commands.map(cmd => `
-      <div class="mb-4 p-4 bg-gray-800 rounded-md">
-        <h3 class="text-xl font-bold">${cmd.name}</h3>
-        <p class="text-gray-400">Category: ${cmd.category}</p>
-        <p>${cmd.description}</p>
-        <p class="text-sm text-gray-400">Aliases: ${cmd.aliases.join(", ")}</p>
-        <p class="text-sm">Usage: ${cmd.usage}</p>
-        <p class="text-sm">Example: ${cmd.example}</p>
-      </div>
-    `).join("");
+    fetchCommands().then(commands => {
+      if (commands.length === 0) {
+        commandsElement.innerHTML = '<p class="text-red-500">Failed to load commands. Please try again later.</p>';
+        return;
+      }
 
-    commandsElement.innerHTML = commandsList;
-  } else {
-    console.error("commands element not found");
+      const commandsList = commands.map(cmd => `
+        <div class="mb-4 p-4 bg-gray-800 rounded-md">
+          <h3 class="text-xl font-bold">${cmd.name}</h3>
+          <p class="text-gray-400">Category: ${cmd.category}</p>
+          <p>${cmd.description}</p>
+          <p class="text-sm text-gray-400">Aliases: ${cmd.aliases.join(", ")}</p>
+          <p class="text-sm">Usage: ${cmd.usage}</p>
+          <p class="text-sm">Example: ${cmd.example}</p>
+        </div>
+      `).join("");
+
+      commandsElement.innerHTML = commandsList;
+    });
   }
 </script>
