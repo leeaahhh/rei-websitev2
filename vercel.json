@@ -1,14 +1,19 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs18"
+    }
+  },
   "redirects": [
     {
-      "source": "/support",
+      "source": "/support", 
       "destination": "https://discord.gg/igna",
       "statusCode": 301
     },
     {
       "source": "/invite",
-      "destination": "https://discord.com/oauth2/authorize?client_id=1122596575009579129&scope=bot",
+      "destination": "https://discord.com/oauth2/authorize?client_id=1122596575009579129&scope=bot", 
       "statusCode": 301
     }
   ]
