@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://rei.nerv.run/sitemap-index.xml
