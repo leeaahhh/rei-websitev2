@@ -12,7 +12,17 @@ import Layout from "../layouts/Layout.astro";
           ></span
         >
       </h1>
-      <div class="overflow-auto text-white rounded-md p-4" id="commands">
+      
+      <div class="max-w-xl mx-auto mb-6">
+        <input 
+          type="text" 
+          id="searchBar" 
+          placeholder="Search commands..." 
+          class="w-full p-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-gray-500"
+        >
+      </div>
+
+      <div class="overflow-auto text-white rounded-md p-4 max-w-4xl mx-auto" id="commands">
         loading...
       </div>
     </div>
@@ -36,7 +46,7 @@ import Layout from "../layouts/Layout.astro";
         headers: {
           'Accept': 'application/json',
         },
-        mode: 'cors', // explicitly set CORS mode
+        mode: 'cors',
       });
       
       if (!response.ok) {
@@ -52,26 +62,88 @@ import Layout from "../layouts/Layout.astro";
   }
 
   const commandsElement = document.getElementById("commands");
+  const searchBar = document.getElementById("searchBar") as HTMLInputElement;
+  let allCommands: Command[] = [];
 
-  if (commandsElement) {
-    fetchCommands().then(commands => {
-      if (commands.length === 0) {
-        commandsElement.innerHTML = '<p class="text-red-500">Failed to load commands. Please try again later.</p>';
-        return;
+  function renderCommands(commands: Command[]) {
+    if (commands.length === 0) {
+      commandsElement!.innerHTML = '<p class="text-red-500">No commands found.</p>';
+      return;
+    }
+
+    // Group commands by category
+    const groupedCommands = commands.reduce((acc, cmd) => {
+      if (!acc[cmd.category]) {
+        acc[cmd.category] = [];
       }
+      acc[cmd.category].push(cmd);
+      return acc;
+    }, {} as Record<string, Command[]>);
 
-      const commandsList = commands.map(cmd => `
-        <div class="mb-4 p-4 bg-gray-800 rounded-md">
-          <h3 class="text-xl font-bold">${cmd.name}</h3>
-          <p class="text-gray-400">Category: ${cmd.category}</p>
-          <p>${cmd.description}</p>
-          <p class="text-sm text-gray-400">Aliases: ${cmd.aliases.join(", ")}</p>
-          <p class="text-sm">Usage: ${cmd.usage}</p>
-          <p class="text-sm">Example: ${cmd.example}</p>
+    // Create HTML for each category
+    const categoriesHtml = Object.entries(groupedCommands).map(([category, cmds], index) => `
+      <div class="mb-2 border border-gray-700 rounded-lg overflow-hidden">
+        <button 
+          class="w-full p-4 bg-gray-800 text-left flex justify-between items-center hover:bg-gray-700 transition-colors"
+          onclick="toggleCategory(${index})"
+        >
+          <span class="text-xl font-bold">${category}</span>
+          <span class="text-sm text-gray-400">${cmds.length} commands</span>
+        </button>
+        <div class="category-content hidden" id="category-${index}">
+          ${cmds.map(cmd => `
+            <div class="p-4 border-t border-gray-700 bg-gray-900">
+              <div class="flex justify-between items-start">
+                <h3 class="text-lg font-bold">${cmd.name}</h3>
+                <span class="text-sm text-gray-400">${cmd.aliases.length ? `aliases: ${cmd.aliases.join(", ")}` : ''}</span>
+              </div>
+              <p class="text-gray-300 mt-2">${cmd.description}</p>
+              <div class="mt-2 text-sm text-gray-400">
+                <p>Usage: ${cmd.usage}</p>
+                <p>Example: ${cmd.example}</p>
+              </div>
+            </div>
+          `).join("")}
         </div>
-      `).join("");
+      </div>
+    `).join("");
 
-      commandsElement.innerHTML = commandsList;
+    commandsElement!.innerHTML = categoriesHtml;
+  }
+
+  function filterCommands(searchTerm: string) {
+    const filtered = allCommands.filter(cmd => 
+      cmd.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cmd.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cmd.aliases.some(alias => alias.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      cmd.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    renderCommands(filtered);
+  }
+
+  // Add this function to handle category toggling
+  window.toggleCategory = function(index: number) {
+    const content = document.getElementById(`category-${index}`);
+    if (content) {
+      content.classList.toggle('hidden');
+    }
+  };
+
+  if (commandsElement && searchBar) {
+    fetchCommands().then(commands => {
+      allCommands = commands;
+      renderCommands(commands);
+
+      searchBar.addEventListener('input', (e) => {
+        const searchTerm = (e.target as HTMLInputElement).value;
+        filterCommands(searchTerm);
+      });
     });
   }
 </script>
+
+<style>
+  .category-content {
+    transition: max-height 0.3s ease-out;
+  }
+</style>
