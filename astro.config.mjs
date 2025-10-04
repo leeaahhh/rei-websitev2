@@ -10,6 +10,7 @@ export default defineConfig({
   integrations: [tailwind(), sitemap()],
   output: "server",
   adapter: vercel({
-    functionPerRoute: false
+    functionPerRoute: false,
+    runtime: "nodejs20.x"
   }),
 });
